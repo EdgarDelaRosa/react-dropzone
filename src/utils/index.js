@@ -10,6 +10,8 @@ export function getDataTransferItems(event) {
   if (event.dataTransfer) {
     const dt = event.dataTransfer
 
+    // NOTE: Only the 'drop' event has access to DataTransfer.files,
+    // otherwise it will always be empty
     if (dt.files && dt.files.length) {
       dataTransferItemsList = dt.files
     } else if (dt.items && dt.items.length) {
@@ -37,6 +39,21 @@ export function fileMatchSize(file, maxSize, minSize) {
 
 export function allFilesAccepted(files, accept) {
   return files.every(file => fileAccepted(file, accept))
+}
+
+export function isFileList(items) {
+  // Returns true only for items that are File objects or DataTransferItem of kind 'file',
+  // See https://developer.mozilla.org/en-US/docs/Web/API/DataTransferItem for details
+  return (
+    Array.isArray(items) &&
+    items.length > 0 &&
+    (Array.prototype.every.call(items, item => item instanceof File) ||
+      Array.prototype.every.call(items, isKindFile))
+  )
+}
+
+export function isKindFile(item) {
+  return typeof item === 'object' && item.kind === 'file'
 }
 
 // allow the entire document to be a drag target

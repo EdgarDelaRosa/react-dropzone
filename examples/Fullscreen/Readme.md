@@ -1,6 +1,6 @@
 You can wrap the whole app into the dropzone. This will make the whole app a Dropzone target.
 
-```
+```jsx harmony
 class FullScreen extends React.Component {
   constructor() {
     super()
@@ -71,7 +71,7 @@ class FullScreen extends React.Component {
           <h2>Dropped files</h2>
           <ul>
             {
-              files.map(f => <li>{f.name} - {f.size} bytes</li>)
+              files.map((file, index) => <li key={index}>{file.name} - {file.size} bytes</li>)
             }
           </ul>
 

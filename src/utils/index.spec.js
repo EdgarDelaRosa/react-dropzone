@@ -1,4 +1,4 @@
-import { getDataTransferItems, isIeOrEdge } from './'
+import { getDataTransferItems, isIeOrEdge, isFileList } from './'
 
 const files = [
   {
@@ -15,6 +15,27 @@ const files = [
     name: 'dogs.jpg',
     size: 2345,
     type: 'image/jpeg'
+  }
+]
+
+const nonFileItems = [
+  {
+    kind: 'string',
+    type: 'text/plain'
+  }
+]
+
+const json = JSON.stringify({
+  ping: true
+})
+const file = new File([json], 'test.json', {
+  type: 'application/json'
+})
+
+const fileItems = [
+  {
+    kind: 'file',
+    type: 'application/json'
   }
 ]
 
@@ -45,12 +66,12 @@ describe('getDataTransferItems', () => {
         files: [{}]
       },
       dataTransfer: {
-        items: files
+        items: fileItems
       }
     }
     const res = getDataTransferItems(event)
     expect(res).toBeInstanceOf(Array)
-    expect(res).toHaveLength(3)
+    expect(res).toHaveLength(1)
   })
 
   it('should use event.target if dataTransfer is not defined', () => {
@@ -64,7 +85,7 @@ describe('getDataTransferItems', () => {
     expect(res).toHaveLength(3)
   })
 
-  it('should prioritize dataTransfer.files over .files', () => {
+  it('should prioritize dataTransfer.files over .items', () => {
     const event = {
       dataTransfer: {
         files: [{}, {}],
@@ -114,5 +135,15 @@ describe('isIeOrEdge', () => {
       'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.186 Safari/537.36'
 
     expect(isIeOrEdge(userAgent)).toBe(false)
+  })
+})
+
+describe('isFileList', () => {
+  it('should only return true for an Array of File objects or DataTransferItem of kind file', () => {
+    expect(isFileList([file])).toBe(true)
+    expect(isFileList(fileItems)).toBe(true)
+    expect(isFileList(nonFileItems)).toBe(false)
+    expect(isFileList([])).toBe(false)
+    expect(isFileList(null)).toBe(false)
   })
 })

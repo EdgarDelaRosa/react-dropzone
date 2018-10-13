@@ -26,6 +26,7 @@ type DropzoneRenderArgs = {
   isDragActive: boolean;
   isDragAccept: boolean;
   isDragReject: boolean;
+  open: () => void;
 };
 
 export type DropzoneRenderFunction = (x: DropzoneRenderArgs) => JSX.Element;
@@ -52,7 +53,7 @@ export type DropzoneProps = Omit<React.HTMLProps<HTMLDivElement>, "onDrop"> & {
   onDropAccepted?: DropFileEventHandler;
   onDropRejected?: DropFileEventHandler;
   onFileDialogCancel?: () => void;
-  children: React.ReactNode | DropzoneRenderFunction;
+  children?: React.ReactNode | DropzoneRenderFunction;
 };
 
 export default class Dropzone extends Component<DropzoneProps> {

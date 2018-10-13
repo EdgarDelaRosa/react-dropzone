@@ -12,6 +12,7 @@ module.exports = {
   serverPort: 8080,
   sections: [
     {
+      name: '',
       content: 'README.md'
     },
     {
@@ -43,6 +44,22 @@ module.exports = {
         {
           name: 'Full Screen Dropzone',
           content: 'examples/Fullscreen/Readme.md'
+        },
+        {
+          name: 'Extending Dropzone',
+          context: {
+            Dropzone: './src/index'
+          },
+          sections: [
+            {
+              name: 'Using third-party plugins',
+              content: 'examples/PluginArchitecture/Readme.md'
+            },
+            {
+              name: 'Dropzone for folders',
+              content: 'examples/Folders/Readme.md'
+            }
+          ]
         }
       ]
     }

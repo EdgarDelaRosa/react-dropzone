@@ -1,4 +1,3 @@
-/* global process */
 /* eslint prefer-template: 0 */
 
 import React from 'react'
@@ -10,7 +9,8 @@ import {
   fileMatchSize,
   onDocumentDragOver,
   getDataTransferItems as defaultGetDataTransferItem,
-  isIeOrEdge
+  isIeOrEdge,
+  isFileList
 } from './utils'
 import styles from './utils/styles'
 
@@ -27,6 +27,7 @@ class Dropzone extends React.Component {
     this.onDrop = this.onDrop.bind(this)
     this.onFileDialogCancel = this.onFileDialogCancel.bind(this)
     this.onInputElementClick = this.onInputElementClick.bind(this)
+    this.open = this.open.bind(this)
 
     this.setRef = this.setRef.bind(this)
     this.setRefs = this.setRefs.bind(this)
@@ -84,9 +85,11 @@ class Dropzone extends React.Component {
   }
 
   onDragStart(evt) {
-    if (this.props.onDragStart) {
-      this.props.onDragStart.call(this, evt)
-    }
+    Promise.resolve(this.props.getDataTransferItems(evt)).then(draggedFiles => {
+      if (isFileList(draggedFiles) && this.props.onDragStart) {
+        this.props.onDragStart.call(this, evt)
+      }
+    })
   }
 
   onDragEnter(evt) {
@@ -100,14 +103,17 @@ class Dropzone extends React.Component {
     evt.persist()
 
     Promise.resolve(this.props.getDataTransferItems(evt)).then(draggedFiles => {
-      this.setState({
-        isDragActive: true, // Do not rely on files for the drag state. It doesn't work in Safari.
-        draggedFiles
-      })
+      if (isFileList(draggedFiles)) {
+        this.setState({
+          isDragActive: true, // Do not rely on files for the drag state. It doesn't work in Safari.
+          draggedFiles
+        })
+
+        if (this.props.onDragEnter) {
+          this.props.onDragEnter.call(this, evt)
+        }
+      }
     })
-    if (this.props.onDragEnter) {
-      this.props.onDragEnter.call(this, evt)
-    }
   }
 
   onDragOver(evt) {
@@ -123,9 +129,12 @@ class Dropzone extends React.Component {
       // continue regardless of error
     }
 
-    if (this.props.onDragOver) {
-      this.props.onDragOver.call(this, evt)
-    }
+    Promise.resolve(this.props.getDataTransferItems(evt)).then(draggedFiles => {
+      if (isFileList(draggedFiles) && this.props.onDragOver) {
+        this.props.onDragOver.call(this, evt)
+      }
+    })
+
     return false
   }
 
@@ -144,9 +153,11 @@ class Dropzone extends React.Component {
       draggedFiles: []
     })
 
-    if (this.props.onDragLeave) {
-      this.props.onDragLeave.call(this, evt)
-    }
+    Promise.resolve(this.props.getDataTransferItems(evt)).then(draggedFiles => {
+      if (isFileList(draggedFiles) && this.props.onDragLeave) {
+        this.props.onDragLeave.call(this, evt)
+      }
+    })
   }
 
   onDrop(evt) {
@@ -183,15 +194,16 @@ class Dropzone extends React.Component {
       const acceptedFiles = []
       const rejectedFiles = []
 
+      if (
+        !isFileList(fileList) ||
+        (isIeOrEdge() && evt.dataTransfer && !isFileList(Array.from(evt.dataTransfer.items)))
+      ) {
+        return
+      }
+
       fileList.forEach(file => {
         if (!disablePreview) {
-          try {
-            file.preview = window.URL.createObjectURL(file) // eslint-disable-line no-param-reassign
-          } catch (err) {
-            if (process.env.NODE_ENV !== 'production') {
-              console.error('Failed to generate preview for file', file, err) // eslint-disable-line no-console
-            }
-          }
+          file.preview = window.URL.createObjectURL(file) // eslint-disable-line no-param-reassign
         }
 
         if (
@@ -210,17 +222,22 @@ class Dropzone extends React.Component {
         rejectedFiles.push(...acceptedFiles.splice(0))
       }
 
-      if (onDrop) {
-        onDrop.call(this, acceptedFiles, rejectedFiles, evt)
-      }
+      // Update `acceptedFiles` and `rejectedFiles` state
+      // This will make children render functions receive the appropriate
+      // values
+      this.setState({ acceptedFiles, rejectedFiles }, () => {
+        if (onDrop) {
+          onDrop.call(this, acceptedFiles, rejectedFiles, evt)
+        }
 
-      if (rejectedFiles.length > 0 && onDropRejected) {
-        onDropRejected.call(this, rejectedFiles, evt)
-      }
+        if (rejectedFiles.length > 0 && onDropRejected) {
+          onDropRejected.call(this, rejectedFiles, evt)
+        }
 
-      if (acceptedFiles.length > 0 && onDropAccepted) {
-        onDropAccepted.call(this, acceptedFiles, evt)
-      }
+        if (acceptedFiles.length > 0 && onDropAccepted) {
+          onDropAccepted.call(this, acceptedFiles, evt)
+        }
+      })
     })
   }
 
@@ -297,7 +314,8 @@ class Dropzone extends React.Component {
         ...this.state,
         isDragActive,
         isDragAccept,
-        isDragReject
+        isDragReject,
+        open: this.open
       })
     }
     return children
